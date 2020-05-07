@@ -27,6 +27,7 @@ struct Options {
     flag_quiet: Option<bool>,
     flag_color: Option<String>,
     flag_git: bool,
+    flag_no_canonical: bool,
     flag_use_source_replacement: bool,
 }
 
@@ -70,6 +71,7 @@ Options:
     -q, --quiet               No output printed to stdout
     --color WHEN              Coloring: auto, always, never
     --no-delete               Don't delete older crates in the local registry directory
+    --no-canonical            Don't attempt to normalise the dest directory.
     --use-source-replacement  By default source replacement is skipped when syncing.
 "#;
 
@@ -153,7 +155,11 @@ fn sync(
     config: &Config,
 ) -> CargoResult<()> {
     let no_delete = options.flag_no_delete.unwrap_or(false);
-    let canonical_local_dst = local_dst.canonicalize().unwrap_or(local_dst.to_path_buf());
+    let canonical_local_dst = if options.flag_no_canonical {
+        local_dst.to_path_buf()
+    } else {
+        local_dst.canonicalize().unwrap_or(local_dst.to_path_buf())
+    };
     let manifest = lockfile.parent().unwrap().join("Cargo.toml");
     let manifest = env::current_dir().unwrap().join(&manifest);
     let ws = Workspace::new(&manifest, config)?;
